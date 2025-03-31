@@ -72,22 +72,44 @@ namespace caro27_033.BLL
         private void GameTimer_Tick(object? sender, EventArgs e)
         {
             // Lấy ProgressBar của người chơi hiện tại
-            ProgressBar currentProgressBar = currentPlayer == 0 ? progressBar1 : progressBar2;
+            ProgressBar currentProgressBar;
+
+            if (currentPlayer == 0)
+            {
+                currentProgressBar = progressBar2; // Người chơi 1 dùng progressBar2
+            }
+            else
+            {
+                currentProgressBar = progressBar1; // Người chơi 2 dùng progressBar1
+            }
 
             // Giảm giá trị ProgressBar
             if (currentProgressBar != null && currentProgressBar.Value > 0)
             {
                 currentProgressBar.Value--;
+
+                // Đổi màu khi gần hết thời gian
+                if (currentProgressBar.Value < currentProgressBar.Maximum * 0.3)
+                {
+                    currentProgressBar.ForeColor = Color.Red;
+                }
             }
 
             // Khi hết thời gian
             if (currentProgressBar != null && currentProgressBar.Value == 0)
             {
                 StopTimer();
-                onTimeOut?.Invoke(currentPlayer);
+                if (onTimeOut != null)
+                {
+                    onTimeOut.Invoke(currentPlayer);
+                }
             }
         }
 
+
+        /// <summary>
+        /// Bắt đầu đếm ngược
+        /// </summary>
         /// <summary>
         /// Bắt đầu đếm ngược
         /// </summary>
@@ -99,26 +121,30 @@ namespace caro27_033.BLL
             // Cập nhật người chơi hiện tại
             currentPlayer = player;
 
-            // Xác định ProgressBar hiện tại và ProgressBar của đối thủ
-            ProgressBar currentProgressBar = currentPlayer == 0 ? progressBar1 : progressBar2;
-            ProgressBar otherProgressBar = currentPlayer == 0 ? progressBar2 : progressBar1;
+            // Xác định ProgressBar hiện tại
+            ProgressBar currentProgressBar;
 
-            // Hiện ProgressBar hiện tại
-            if (currentProgressBar != null)
+            // Quan trọng: Đảm bảo mapping đúng giữa người chơi và ProgressBar
+            if (currentPlayer == 0)
             {
-                currentProgressBar.Visible = true;
+                currentProgressBar = progressBar2; // Người chơi 1 dùng progressBar2
+            }
+            else
+            {
+                currentProgressBar = progressBar1; // Người chơi 2 dùng progressBar1
             }
 
-            // Ẩn và reset ProgressBar của đối thủ
-            if (otherProgressBar != null)
+            // Reset giá trị ProgressBar
+            if (currentProgressBar != null)
             {
-                otherProgressBar.Visible = false;
-                otherProgressBar.Value = otherProgressBar.Maximum;
+                currentProgressBar.Value = currentProgressBar.Maximum;
+                currentProgressBar.ForeColor = SystemColors.Highlight;
             }
 
             // Bắt đầu đếm ngược
             gameTimer.Start();
         }
+
 
         /// <summary>
         /// Dừng timer

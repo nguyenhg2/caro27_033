@@ -70,8 +70,8 @@ namespace caro27_033.BLL
 
         #region Initialize
         public ChessBoardManager(Panel chessBoard, PictureBox avt1, PictureBox avt2,
-                                Label lab1, Label lab2, ProgressBar prgBar1, ProgressBar prgBar2,
-                                bool playWithBot = false, string level = "Dễ")
+                         Label lab1, Label lab2, ProgressBar prgBar1, ProgressBar prgBar2,
+                         bool playWithBot = false, string level = "Dễ")
         {
             this.chessBoard = chessBoard;
             this.avartar1 = avt1;
@@ -89,8 +89,18 @@ namespace caro27_033.BLL
             imageO = File.Exists(imagePathO) ? Image.FromFile(imagePathO) : new Bitmap(1, 1);
 
             // Khởi tạo người chơi
-            Player.Add(new Player(labelName2.Text, imageX));  // Người chơi 1 hoặc người chơi
-            Player.Add(new Player(labelName1.Text, imageO));  // Người chơi 2 hoặc Bot
+            if (isPlayingWithBot)
+            {
+                // Chế độ chơi với Bot: Player[0] = người chơi, Player[1] = Bot
+                Player.Add(new Player(labelName2.Text, imageX));  // Người chơi
+                Player.Add(new Player(labelName1.Text, imageO));  // Bot
+            }
+            else
+            {
+                // Chế độ 2 người chơi
+                Player.Add(new Player(labelName2.Text, imageX));  // Người chơi 1
+                Player.Add(new Player(labelName1.Text, imageO));  // Người chơi 2
+            }
 
             // Khởi tạo timer manager
             TimerManager = new GameTimerManager(progressBar1, progressBar2, OnTimeOut);
@@ -222,7 +232,7 @@ namespace caro27_033.BLL
             {
                 // Cho bot suy nghĩ một chút trước khi đánh
                 System.Windows.Forms.Timer botThinkTimer = new System.Windows.Forms.Timer();
-                botThinkTimer.Interval = 500; // 0.5 giây
+                botThinkTimer.Interval = 100; // 0.5 giây
                 botThinkTimer.Tick += (s, args) =>
                 {
                     botThinkTimer.Stop();
@@ -335,19 +345,48 @@ namespace caro27_033.BLL
         /// <summary>
         /// Xử lý khi hết thời gian
         /// </summary>
+        /// <summary>
+        /// Xử lý khi hết thời gian
+        /// </summary>
+        /// <summary>
+        /// Xử lý khi hết thời gian
+        /// </summary>
         private void OnTimeOut(int player)
         {
             TimerManager.StopTimer();
-            MessageBox.Show($"{Player[currentPlayer].Name} đã thua do hết thời gian! ",
-                "Hết thời gian", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            // Tìm người thắng
+            int winnerPlayer = (player == 0) ? 1 : 0; // Người thắng là người còn lại
+
+            // Hiển thị thông báo hết thời gian
+            MessageBox.Show($"{Player[player].Name} đã thua do hết thời gian!" +
+                            $"\n{Player[winnerPlayer].Name} thắng!",
+                            "Hết thời gian",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+
+            // Cập nhật điểm số cho người thắng
+            UpdatePlayerScore(Player[winnerPlayer].Name);
+
+            // Reset bàn cờ
             ResetChessBoard();
         }
 
+
+        /// <summary>
+        /// Reset bàn cờ mà không tạo lại các button
+        /// </summary>
         /// <summary>
         /// Reset bàn cờ mà không tạo lại các button
         /// </summary>
         public void ResetChessBoard()
         {
+            // Dừng timer nếu đang chạy
+            if (TimerManager != null)
+            {
+                TimerManager.StopTimer();
+            }
+
             // Xóa hình ảnh nền của tất cả các button
             foreach (List<Button> buttonRow in matrix)
             {
@@ -363,14 +402,32 @@ namespace caro27_033.BLL
 
             // Chuyển lượt người chơi
             currentPlayer = 0;
+
+            // Đặt lại giá trị ProgressBar
+            if (progressBar1 != null)
+            {
+                progressBar1.Value = progressBar1.Maximum;
+                progressBar1.Visible = false;
+            }
+
+            if (progressBar2 != null)
+            {
+                progressBar2.Value = progressBar2.Maximum;
+                progressBar2.Visible = true;
+            }
+
+            // Đổi lượt và bắt đầu đếm thời gian
             ChangePlayer();
             TimerManager.StartCountdown(currentPlayer);
 
-            // Cập nhật bảng điểm
-            frmScore frm = new frmScore();
-            frm.LoadScoreData();
+            // KHÔNG gọi lại LoadScoreData ở đây để tránh vòng lặp vô hạn
+            // frmScore frm = new frmScore();
+            // frm.LoadScoreData();
         }
 
+        /// <summary>
+        /// Đổi lượt hiển thị label
+        /// </summary>
         /// <summary>
         /// Đổi lượt hiển thị label
         /// </summary>
@@ -382,10 +439,21 @@ namespace caro27_033.BLL
 
             // Thay đổi hiển thị tên người chơi hiện tại
             if (currentPlayer == 0)
+            {
                 labelName2.BackColor = Color.Green;
+                // Hiển thị ProgressBar của người chơi 1, ẩn ProgressBar của người chơi 2
+                progressBar2.Visible = true;
+                progressBar1.Visible = false;
+            }
             else
+            {
                 labelName1.BackColor = Color.Green;
+                // Hiển thị ProgressBar của người chơi 2, ẩn ProgressBar của người chơi 1
+                progressBar1.Visible = true;
+                progressBar2.Visible = false;
+            }
         }
+
         #endregion
     }
 }
